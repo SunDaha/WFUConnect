@@ -1,10 +1,57 @@
 [project]
 name = "wfuconnect"
-version = "0.1.0"
-description = "Add your description here"
+dynamic = ["version"]
+description = "潍坊学院校园网（gwifi 门户）断线自动重连命令行工具"
 readme = "README.md"
 requires-python = ">=3.14"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "SunDaha", email = "sunkangcheng0@gmail.com" }]
+keywords = ["wfu", "weifang-university", "campus-network", "gwifi", "portal", "auto-login"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+]
 dependencies = [
     "pycryptodome>=3.23.0",
     "requests>=2.34.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/SunDaha/WFUConnect"
+Repository = "https://github.com/SunDaha/WFUConnect"
+Issues = "https://github.com/SunDaha/WFUConnect/issues"
+
+# 安装后生成 `wfuconnect` 命令行程序，等价于 `python -m wfuconnect`
+[project.scripts]
+wfuconnect = "wfuconnect.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# 版本号单一来源：wfuconnect/__init__.py 里的 __version__
+[tool.hatch.version]
+path = "wfuconnect/__init__.py"
+
+# 只打包发布必需的文件，避免把本地配置/日志误传上去
+[tool.hatch.build.targets.sdist]
+include = [
+    "/wfuconnect",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+    "/config.example.json",
+    "/requirements.txt",
+]
+exclude = ["/.claude"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["wfuconnect"]

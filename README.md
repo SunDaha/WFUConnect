@@ -11,6 +11,7 @@
 - **多路探测**：内置门户在线接口 + 多个 captive portal `generate_204` 备用探测，避免误判。
 - **失败分类**：识别账号侧问题（未开通 / 需绑定手机号 / MAC 变更等），这类错误不无脑重试。
 - **三种动作**：`run` 守护、`status` 单次查询、`login` 立即登录一次（可 `--dry-run`）。
+- **开箱即用的命令**：安装后直接 `wfuconnect login`，无需 `python xxx.py login` 这类脚本路径调用。
 - **配置灵活**：命令行参数 > 环境变量 > `config.json`，密码文件已被 `.gitignore` 忽略。
 
 ## 环境要求
@@ -20,7 +21,17 @@
 
 ## 安装
 
-### 方式一：原生 Python（venv + pip）
+### 方式一：从 PyPI 安装（最省事，无需克隆仓库）
+
+```bash
+# 装成全局命令，任意目录直接使用
+uv tool install wfuconnect      # 或 pipx install wfuconnect
+
+# 或者装进当前虚拟环境
+pip install wfuconnect
+```
+
+### 方式二：从源码安装 —— 原生 Python（venv + pip）
 
 不需要任何额外工具，用标准 `venv` + `pip` 即可：
 
@@ -35,24 +46,37 @@ python -m venv .venv
 # Linux / macOS
 source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -e .          # 安装项目本身，顺带生成 wfuconnect 命令
 ```
 
-### 方式二：uv（推荐）
+### 方式三：从源码安装 —— uv（推荐）
 
 ```bash
 git clone https://github.com/SunDaha/WFUConnect.git
 cd WFUConnect
-uv sync
+uv sync                   # 同步依赖并安装本项目，生成 wfuconnect 命令
 ```
+
+### 方式四：源码 + uv tool（全局命令）
+
+不想每次都激活虚拟环境，可以把 `wfuconnect` 装成全局命令：
+
+```bash
+uv tool install .         
+wfuconnect status         
+```
+
+卸载：`uv tool uninstall wfuconnect`。
+
+> 方式二 / 方式三是**可编辑安装**，改了源码立即生效；
+> 方式四安装的是独立副本，更新代码后需要重新执行 `uv tool install . --force`。
+
+> 安装后即可使用 `wfuconnect` 命令。
+> 没安装命令时也可以用等价写法 `python -m wfuconnect`。
 
 ## 配置账号
 
-复制示例配置并填入学工号 / 密码：
-
-```bash
-cp config.example.json config.json
-```
+在**运行 `wfuconnect` 的目录**下新建 `config.json`：
 
 ```json
 {
@@ -63,29 +87,29 @@ cp config.example.json config.json
 }
 ```
 
-`config.json` 含明文密码，已写入 `.gitignore`，请勿提交。
+从源码安装时，也可以直接复制示例配置：`cp config.example.json config.json`。
+
+`config.json` 含明文密码，请勿提交到 git（仓库已通过 `.gitignore` 忽略）。
+配置文件按 **`WFU_CONFIG` 环境变量 > 当前目录 > 项目根目录** 的顺序查找；
 也可以完全不写配置文件，改用环境变量或命令行参数（见下）。
 
 ## 用法
 
-用 uv：
+安装后（激活虚拟环境，或使用全局安装），直接调用 `wfuconnect`：
 
 ```bash
-uv run main.py status                # 查看当前是否联网（exit 0=在线，1=离线）
-uv run main.py login                 # 立即登录一次
-uv run main.py login --dry-run       # 只打印将要发送的密文，不提交
-uv run main.py run                   # 守护模式：断线自动登录（默认动作）
-uv run main.py run --interval 10 -v --log-file wfu.log
+wfuconnect status                    # 查看当前是否联网（exit 0=在线，1=离线）
+wfuconnect login                     # 立即登录一次
+wfuconnect login --dry-run           # 只打印将要发送的密文，不提交
+wfuconnect run                       # 守护模式：断线自动登录（默认动作）
+wfuconnect run --interval 10 -v --log-file wfu.log
 ```
 
-用原生 Python（先激活上面创建的虚拟环境）：
+其他等价写法：
 
 ```bash
-python main.py status                # 查看当前是否联网（exit 0=在线，1=离线）
-python main.py login                 # 立即登录一次
-python main.py login --dry-run       # 只打印将要发送的密文，不提交
-python main.py run                   # 守护模式：断线自动登录（默认动作）
-python main.py run --interval 10 -v --log-file wfu.log
+uv run wfuconnect login              # 用 uv 在当前项目里执行（不必先 activate）
+python -m wfuconnect login           # 没生成命令时用模块方式
 ```
 
 ### 参数
@@ -111,6 +135,7 @@ python main.py run --interval 10 -v --log-file wfu.log
 | `WFU_PASSWORD` | `--password` |
 | `WFU_BASE_URL` | `--base-url` |
 | `WFU_INTERVAL` | `--interval` |
+| `WFU_CONFIG` | 指定 `config.json` 的路径（默认按「当前目录 -> 项目根目录」查找） |
 
 读取优先级：**命令行参数 > 环境变量 > `config.json` > 内置默认值**。
 
@@ -119,17 +144,17 @@ python main.py run --interval 10 -v --log-file wfu.log
 Linux / macOS：
 
 ```bash
-nohup python main.py run --log-file wfu.log &
+nohup wfuconnect run --log-file wfu.log &
 ```
 
 Windows（开机自启可配合任务计划程序）：
 
 ```powershell
 chcp 65001
-python main.py run --log-file wfu.log
+wfuconnect run --log-file wfu.log
 ```
 
-> 用 uv 时把上面的 `python main.py` 换成 `uv run main.py` 即可。
+> 还没安装 `wfuconnect` 命令时，把上面的 `wfuconnect` 换成 `python -m wfuconnect` 即可。
 
 ## 认证协议
 
@@ -158,9 +183,12 @@ python main.py run --log-file wfu.log
 ## 项目结构
 
 ```
-main.py              CLI 入口：参数解析、日志、守护循环（Watchdog）
-portal.py            PortalClient：抓页面、加解密、登录、在线检测
-source/login.html    门户原始登录页（协议逆向依据）
+wfuconnect/          包目录
+  __init__.py        包信息（版本号）
+  __main__.py        支持 python -m wfuconnect
+  cli.py             CLI 入口：参数解析、日志、守护循环（Watchdog）
+  portal.py          PortalClient：抓页面、加解密、登录、在线检测
+pyproject.toml       包元数据 + wfuconnect 命令入口 + 构建后端
 config.example.json  配置示例
 requirements.txt     pip 依赖清单
 ```
@@ -168,7 +196,7 @@ requirements.txt     pip 依赖清单
 自检加解密逻辑：
 
 ```bash
-uv run portal.py     # 或：python portal.py
+python -m wfuconnect.portal
 # 输出 selftest ok
 ```
 
@@ -177,4 +205,4 @@ uv run portal.py     # 或：python portal.py
 - **Windows 控制台乱码**：先执行 `chcp 65001`，或在 Windows Terminal 中运行。
 - **总是提示未连接**：确认 `--base-url` 可达；`-v` 查看详细日志。
 - **报 “账号状态异常”**：属于账号侧问题（未开通 / 未绑定手机号 / MAC 变更），脚本会暂停重连，请按上表人工处理。
-- **门户结构变更**：若报 “未找到 frmLogin 表单”，说明门户页面已改版，需要更新 `portal.py` 中的解析规则。
+- **门户结构变更**：若报 “未找到 frmLogin 表单”，说明门户页面已改版，需要更新 `wfuconnect/portal.py` 中的解析规则。

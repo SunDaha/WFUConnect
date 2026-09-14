@@ -1,3 +1,6 @@
+# 本地工具/编辑器配置
+.claude/
+
 # Python-generated files
 __pycache__/
 *.py[oc]

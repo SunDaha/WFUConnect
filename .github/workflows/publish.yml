@@ -1,0 +1,56 @@
+name: Publish to PyPI
+
+# 打 tag（如 v0.3.0）即自动构建并发布；也可在 Actions 页面手动触发
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Build
+        run: uv build
+
+      - name: Check tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          pkg=$(basename dist/*.whl | cut -d- -f2)
+          tag=${GITHUB_REF_NAME#v}
+          echo "包版本=$pkg tag=$tag"
+          if [ "$pkg" != "$tag" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 与包版本 $pkg 不一致，请先更新 wfuconnect/__init__.py 里的 __version__"
+            exit 1
+          fi
+
+      - name: Validate metadata
+        run: uvx twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/wfuconnect
+    permissions:
+      id-token: write   # Trusted Publishing 所需，无需配置 API token
+    steps:
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish
+        run: uv publish --trusted-publishing always

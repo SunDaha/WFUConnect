@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""潍坊学院校园网断线自动重连脚本。
+"""潍坊学院校园网断线自动重连命令行程序。
 
 用法::
 
-    uv run main.py run        # 守护模式：断线即自动登录（默认）
-    uv run main.py status     # 只检测当前是否联网
-    uv run main.py login      # 立刻登录一次
-    uv run main.py login --dry-run   # 只打印将要发送的密文，不提交
+    wfuconnect run        # 守护模式：断线即自动登录（默认）
+    wfuconnect status     # 只检测当前是否联网
+    wfuconnect login      # 立刻登录一次
+    wfuconnect login --dry-run   # 只打印将要发送的密文，不提交
+
+未安装命令行程序时也可以用 `python -m wfuconnect run`。
 
 账号密码按 CLI 参数 -> 环境变量 -> config.json 的顺序读取，优先级从高到低：
     --username/--password
     WFU_USERNAME/WFU_PASSWORD
-    config.json  {"username": "...", "password": "...", " ": 15}
+    config.json  {"username": "...", "password": "...", "interval": 15}
 """
 
 from __future__ import annotations
@@ -26,22 +28,39 @@ from pathlib import Path
 
 import requests
 
-from portal import DEFAULT_BASE_URL, PortalClient, PortalError
+from . import __version__
+from .portal import DEFAULT_BASE_URL, PortalClient, PortalError
 
-CONFIG_FILE = Path(__file__).with_name("config.json")
+#: 包的上一层目录，即源码仓库根目录（config.json 默认放在这里）
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INTERVAL = 15.0
 
 log = logging.getLogger("wfu")
 
 
+def find_config_file() -> Path | None:
+    """定位 config.json：WFU_CONFIG 环境变量 > 当前目录 > 仓库根目录。"""
+    candidates: list[Path] = []
+    if os.getenv("WFU_CONFIG"):
+        candidates.append(Path(os.environ["WFU_CONFIG"]).expanduser())
+    candidates += [Path.cwd() / "config.json", PROJECT_ROOT / "config.json"]
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
 def load_config(args: argparse.Namespace) -> dict:
     """合并 config.json / 环境变量 / 命令行参数。"""
     cfg: dict = {}
-    if CONFIG_FILE.exists():
+    config_file = find_config_file()
+    if config_file is not None:
         try:
-            cfg = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+            cfg = json.loads(config_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            log.warning("读取 %s 失败：%s", CONFIG_FILE.name, exc)
+            log.warning("读取 %s 失败：%s", config_file.name, exc)
+        else:
+            log.debug("已读取配置 %s", config_file)
     cfg["username"] = (
         args.username or os.getenv("WFU_USERNAME") or cfg.get("username", "")
     )
@@ -150,6 +169,7 @@ class Watchdog:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
+        prog="wfuconnect",
         description="潍坊学院校园网断线自动重连",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -159,6 +179,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="run",
         choices=("run", "status", "login"),
         help="run=守护重连, status=查询状态, login=登录一次",
+    )
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"wfuconnect {__version__}"
     )
     parser.add_argument("-u", "--username", help="学工号/手机号")
     parser.add_argument("-p", "--password", help="密码（也可用 WFU_PASSWORD）")
@@ -217,6 +240,10 @@ def main() -> int:
         watchdog.stop()
         log.info("收到中断信号，正在退出…")
         return 130
+    except (requests.RequestException, PortalError) as exc:
+        log.error("请求门户失败：%s", exc)
+        log.error("请确认当前网络能访问 %s（未连接校园网时属正常）", cfg["base_url"])
+        return 1
 
 
 if __name__ == "__main__":
