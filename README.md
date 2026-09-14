@@ -22,7 +22,7 @@
 ## 安装
 
 ```bash
-git clone <repo-url> WFUConnect
+git clone https://github.com/SunDaha/WFUConnect.git
 cd WFUConnect
 uv sync
 ```
