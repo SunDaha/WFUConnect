@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# 本地配置与日志（含密码，勿提交）
+config.json
+*.log
