@@ -1,0 +1,3 @@
+# WFUConnect 运行依赖（pip 方式安装：pip install -r requirements.txt）
+pycryptodome>=3.23.0
+requests>=2.34.2
