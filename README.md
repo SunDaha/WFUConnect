@@ -16,10 +16,29 @@
 ## 环境要求
 
 - Python **>= 3.14**
-- [uv](https://docs.astral.sh/uv/)（推荐）或 pip
-- 运行时依赖：`requests`、`pycryptodome`
+- 运行时依赖：`requests`、`pycryptodome`（见 `requirements.txt`）
 
 ## 安装
+
+### 方式一：原生 Python（venv + pip）
+
+不需要任何额外工具，用标准 `venv` + `pip` 即可：
+
+```bash
+git clone https://github.com/SunDaha/WFUConnect.git
+cd WFUConnect
+
+python -m venv .venv
+
+# Windows（PowerShell / CMD）
+.venv\Scripts\activate
+# Linux / macOS
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### 方式二：uv（推荐）
 
 ```bash
 git clone https://github.com/SunDaha/WFUConnect.git
@@ -49,12 +68,24 @@ cp config.example.json config.json
 
 ## 用法
 
+用 uv：
+
 ```bash
 uv run main.py status                # 查看当前是否联网（exit 0=在线，1=离线）
 uv run main.py login                 # 立即登录一次
 uv run main.py login --dry-run       # 只打印将要发送的密文，不提交
 uv run main.py run                   # 守护模式：断线自动登录（默认动作）
 uv run main.py run --interval 10 -v --log-file wfu.log
+```
+
+用原生 Python（先激活上面创建的虚拟环境）：
+
+```bash
+python main.py status                # 查看当前是否联网（exit 0=在线，1=离线）
+python main.py login                 # 立即登录一次
+python main.py login --dry-run       # 只打印将要发送的密文，不提交
+python main.py run                   # 守护模式：断线自动登录（默认动作）
+python main.py run --interval 10 -v --log-file wfu.log
 ```
 
 ### 参数
@@ -88,15 +119,17 @@ uv run main.py run --interval 10 -v --log-file wfu.log
 Linux / macOS：
 
 ```bash
-nohup uv run main.py run --log-file wfu.log &
+nohup python main.py run --log-file wfu.log &
 ```
 
 Windows（开机自启可配合任务计划程序）：
 
 ```powershell
 chcp 65001
-uv run main.py run --log-file wfu.log
+python main.py run --log-file wfu.log
 ```
+
+> 用 uv 时把上面的 `python main.py` 换成 `uv run main.py` 即可。
 
 ## 认证协议
 
@@ -129,12 +162,14 @@ main.py              CLI 入口：参数解析、日志、守护循环（Watchdo
 portal.py            PortalClient：抓页面、加解密、登录、在线检测
 source/login.html    门户原始登录页（协议逆向依据）
 config.example.json  配置示例
+requirements.txt     pip 依赖清单
 ```
 
 自检加解密逻辑：
 
 ```bash
-uv run portal.py     # 输出 selftest ok
+uv run portal.py     # 或：python portal.py
+# 输出 selftest ok
 ```
 
 ## 故障排查
