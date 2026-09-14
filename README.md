@@ -21,7 +21,7 @@
 
 ## 安装
 
-### 方式一：从 PyPI 安装（最省事，无需克隆仓库）
+### 方式一：从 PyPI 安装（推荐）
 
 ```bash
 # 装成全局命令，任意目录直接使用
@@ -31,48 +31,11 @@ uv tool install wfuconnect      # 或 pipx install wfuconnect
 pip install wfuconnect
 ```
 
-### 方式二：从源码安装 —— 原生 Python（venv + pip）
-
-不需要任何额外工具，用标准 `venv` + `pip` 即可：
-
-```bash
-git clone https://github.com/SunDaha/WFUConnect.git
-cd WFUConnect
-
-python -m venv .venv
-
-# Windows（PowerShell / CMD）
-.venv\Scripts\activate
-# Linux / macOS
-source .venv/bin/activate
-
-pip install -e .          # 安装项目本身，顺带生成 wfuconnect 命令
-```
-
-### 方式三：从源码安装 —— uv（推荐）
-
-```bash
-git clone https://github.com/SunDaha/WFUConnect.git
-cd WFUConnect
-uv sync                   # 同步依赖并安装本项目，生成 wfuconnect 命令
-```
-
-### 方式四：源码 + uv tool（全局命令）
-
-不想每次都激活虚拟环境，可以把 `wfuconnect` 装成全局命令：
-
-```bash
-uv tool install .         
-wfuconnect status         
-```
 
 卸载：`uv tool uninstall wfuconnect`。
 
-> 方式二 / 方式三是**可编辑安装**，改了源码立即生效；
-> 方式四安装的是独立副本，更新代码后需要重新执行 `uv tool install . --force`。
 
-> 安装后即可使用 `wfuconnect` 命令。
-> 没安装命令时也可以用等价写法 `python -m wfuconnect`。
+
 
 ## 配置账号
 
@@ -105,12 +68,6 @@ wfuconnect run                       # 守护模式：断线自动登录（默�
 wfuconnect run --interval 10 -v --log-file wfu.log
 ```
 
-其他等价写法：
-
-```bash
-uv run wfuconnect login              # 用 uv 在当前项目里执行（不必先 activate）
-python -m wfuconnect login           # 没生成命令时用模块方式
-```
 
 ### 参数
 
